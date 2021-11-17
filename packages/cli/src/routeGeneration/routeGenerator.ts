@@ -42,6 +42,9 @@ export class RouteGenerator {
     handlebars.registerHelper('json', (context: any) => {
       return JSON.stringify(context);
     });
+    handlebars.registerHelper('uppercase', (content: string) => {
+      return content.toUpperCase();
+    });
     const additionalPropsHelper = (additionalProperties: TsoaRoute.RefObjectModelSchema['additionalProperties']) => {
       if (additionalProperties) {
         // Then the model for this type explicitly allows additional properties and thus we should assign that

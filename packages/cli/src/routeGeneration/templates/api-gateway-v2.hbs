@@ -1,0 +1,197 @@
+/* tslint:disable */
+/* eslint-disable */
+// WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
+import { Controller, ValidationService, FieldErrors, ValidateError, TsoaRoute } from '@tsoa/runtime';
+{{#each controllers}}
+// WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
+import { {{name}} } from '{{modulePath}}';
+{{/each}}
+{{#if authenticationModule}}
+// @ts-ignore - no great way to install types from subpackage
+const promiseAny = require('promise.any');
+{{/if}}
+{{#if iocModule}}
+import { iocContainer } from '{{iocModule}}';
+import { IocContainer, IocContainerFactory } from '@tsoa/runtime';
+{{/if}}
+import { APIGatewayProxyEventV2, APIGatewayProxyStructuredResultV2, Context } from 'aws-lambda';
+{{!--
+TODO: We probably wont support file upload on lambda?
+{{#if useFileUploads}}
+const multer = require('multer');
+const upload = multer();
+{{/if}}
+--}}
+
+// WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
+
+const models: TsoaRoute.Models = {
+    {{#each models}}
+    "{{@key}}": {
+        {{#if enums}}
+        "dataType": "refEnum",
+        "enums": {{{json enums}}},
+        {{/if}}
+        {{#if properties}}
+        "dataType": "refObject",
+        "properties": {
+            {{#each properties}}
+            "{{@key}}": {{{json this}}},
+            {{/each}}
+        },
+        "additionalProperties": {{{json additionalProperties}}},
+        {{/if}}
+        {{#if type}}
+        "dataType": "refAlias",
+        "type": {{{json type}}},
+        {{/if}}
+    },
+    // WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
+    {{/each}}
+};
+const validationService = new ValidationService(models);
+
+// WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
+
+export function RegisterRoutes(event: APIGatewayProxyEventV2) {
+    // ###########################################################################################################
+    //  NOTE: If you do not see routes for all of your controllers in this file, then you might not have informed tsoa of where to look
+    //      Please look into the "controllerPathGlobs" config option described in the readme: https://github.com/lukeautry/tsoa
+    // ###########################################################################################################
+    const handlers = {
+    {{#each controllers}}
+    {{#each actions}}
+    {{!--
+        TODO: Currently passing in the callback so we can catch error and return to API gateway, would be better to see if someone has sent in the
+        the callback and then decide if we should invoke it or not
+     --}}
+        '{{uppercase method}} {{fullPath}}': {{#if ../../iocModule}}async {{/if}}function {{../name}}_{{name}}(event: APIGatewayProxyEventV2, context: Context, callback: any) {
+            const args = {
+                {{#each parameters}}
+                    {{@key}}: {{{json this}}},
+                {{/each}}
+            };
+
+            // WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
+
+            let validatedArgs: any[] = [];
+            try {
+                validatedArgs = getValidatedArgs(args, event);
+
+            {{#if ../../iocModule}}
+                const container: IocContainer = typeof iocContainer === 'function' ? (iocContainer as IocContainerFactory)(request) : iocContainer;
+
+                const controller: any = await container.get<{{../name}}>({{../name}});
+                if (typeof controller['setStatus'] === 'function') {
+                controller.setStatus(undefined);
+                }
+            {{else}}
+                const controller = new {{../name}}();
+            {{/if}}
+
+
+            const promise = controller.{{name}}.apply(controller, validatedArgs as any);
+            promiseHandler(controller, promise, {{successStatus}}, callback);
+            } catch (err) {
+                return callback(err);
+            }
+        },
+        // WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
+    {{/each}}
+    {{/each}}
+    }
+
+    // WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
+
+    function isController(object: any): object is Controller {
+        return 'getHeaders' in object && 'getStatus' in object && 'setStatus' in object;
+    }
+
+    function promiseHandler(controllerObj: any, promise: any, successStatus: any, callback: any) {
+        return Promise.resolve(promise)
+            .then((data: any) => {
+                let statusCode = successStatus;
+                let headers;
+                if (isController(controllerObj)) {
+                    headers = controllerObj.getHeaders();
+                    statusCode = controllerObj.getStatus() || statusCode;
+                }
+
+                // WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
+
+                returnHandler(statusCode, data, headers)
+            })
+            .catch((error: any) => callback(error));
+    }
+
+    // WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
+
+    function returnHandler(statusCode?: number, data?: any, headers: any = {}): APIGatewayProxyStructuredResultV2 {
+        {{!-- if (response.headersSent) {
+            return;
+        }
+        Object.keys(headers).forEach((name: string) => {
+            response.set(name, headers[name]);
+        });
+        if (data && typeof data.pipe === 'function' && data.readable && typeof data._read === 'function') {
+            data.pipe(response);
+        } else if (data !== null && data !== undefined) {
+            response.status(statusCode || 200).json(data);
+        } else {
+            response.status(statusCode || 204).end();
+        } --}}
+        return {
+            headers,
+            statusCode,
+            body: JSON.stringify(data)
+        }
+    }
+
+    // WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
+
+    function getValidatedArgs(args: any, event: APIGatewayProxyEventV2): any[] {
+        const fieldErrors: FieldErrors  = {};
+        const values = Object.keys(args).map((key) => {
+            const name = args[key].name;
+            switch (args[key].in) {
+                case 'request':
+                    return event;
+                case 'query':
+                    return event.queryStringParameters && validationService.ValidateParam(args[key], event.queryStringParameters[name], name, fieldErrors, undefined, {{{json minimalSwaggerConfig}}});
+                case 'path':
+                    return event.pathParameters && validationService.ValidateParam(args[key], event.pathParameters[name], name, fieldErrors, undefined, {{{json minimalSwaggerConfig}}});
+                case 'header':
+                    return event.headers && validationService.ValidateParam(args[key], event.headers[name], name, fieldErrors, undefined, {{{json minimalSwaggerConfig}}});
+                case 'body':
+                    return validationService.ValidateParam(args[key], event.body, name, fieldErrors, undefined, {{{json minimalSwaggerConfig}}});
+                {{!--
+                TODO: Understand the body prop
+                case 'body-prop':
+                    return validationService.ValidateParam(args[key], request.body[name], name, fieldErrors, 'body.', {{{json minimalSwaggerConfig}}});
+                --}}
+                {{!--
+                TODO: Understand the form data
+
+                case 'formData':
+                    if (args[key].dataType === 'file') {
+                        return validationService.ValidateParam(args[key], request.file, name, fieldErrors, undefined, {{{json minimalSwaggerConfig}}});
+                    } else if (args[key].dataType === 'array' && args[key].array.dataType === 'file') {
+                        return validationService.ValidateParam(args[key], request.files, name, fieldErrors, undefined, {{{json minimalSwaggerConfig}}});
+                    } else {
+                        return validationService.ValidateParam(args[key], request.body[name], name, fieldErrors, undefined, {{{json minimalSwaggerConfig}}});
+                    } --}}
+            }
+        });
+
+        if (Object.keys(fieldErrors).length > 0) {
+            throw new ValidateError(fieldErrors, '');
+        }
+        return values;
+    }
+
+    return handlers
+
+    // WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
+}
+
+// WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa

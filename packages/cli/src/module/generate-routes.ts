@@ -29,6 +29,9 @@ export const generateRoutes = async (
     case 'express':
       template = path.join(__dirname, '..', 'routeGeneration/templates/express.hbs');
       break;
+    case 'api-gateway-v2':
+      template = path.join(__dirname, '..', 'routeGeneration/templates/api-gateway-v2.hbs');
+      break;
     case 'hapi':
       template = path.join(__dirname, '..', 'routeGeneration/templates/hapi.hbs');
       pathTransformer = (path: string) => path;
