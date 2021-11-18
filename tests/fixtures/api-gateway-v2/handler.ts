@@ -21,12 +21,4 @@ import '../controllers/subresourceController';
 
 import { RegisterRoutes } from './routes';
 
-export const handler = async (event, context, callback) => {
-  const handler = RegisterRoutes(event);
-
-  const res = handler['GET /v1/GetTest/ClassModel'](event, context, callback);
-
-  console.info(res);
-
-  return res;
-};
+export const handler = RegisterRoutes();

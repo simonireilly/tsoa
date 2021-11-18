@@ -53,7 +53,7 @@ const validationService = new ValidationService(models);
 
 // WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
 
-export function RegisterRoutes(event: APIGatewayProxyEventV2) {
+export function RegisterRoutes() {
     // ###########################################################################################################
     //  NOTE: If you do not see routes for all of your controllers in this file, then you might not have informed tsoa of where to look
     //      Please look into the "controllerPathGlobs" config option described in the readme: https://github.com/lukeautry/tsoa
@@ -89,9 +89,8 @@ export function RegisterRoutes(event: APIGatewayProxyEventV2) {
                 const controller = new {{../name}}();
             {{/if}}
 
-
             const promise = controller.{{name}}.apply(controller, validatedArgs as any);
-            promiseHandler(controller, promise, {{successStatus}}, callback);
+            return promiseHandler(controller, promise, {{successStatus}}, callback);
             } catch (err) {
                 return callback(err);
             }
@@ -119,7 +118,7 @@ export function RegisterRoutes(event: APIGatewayProxyEventV2) {
 
                 // WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
 
-                returnHandler(statusCode, data, headers)
+                return returnHandler(statusCode, data, headers)
             })
             .catch((error: any) => callback(error));
     }
@@ -127,33 +126,23 @@ export function RegisterRoutes(event: APIGatewayProxyEventV2) {
     // WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
 
     function returnHandler(statusCode?: number, data?: any, headers: any = {}): APIGatewayProxyStructuredResultV2 {
-        {{!-- if (response.headersSent) {
-            return;
-        }
-        Object.keys(headers).forEach((name: string) => {
-            response.set(name, headers[name]);
-        });
-        if (data && typeof data.pipe === 'function' && data.readable && typeof data._read === 'function') {
-            data.pipe(response);
-        } else if (data !== null && data !== undefined) {
-            response.status(statusCode || 200).json(data);
-        } else {
-            response.status(statusCode || 204).end();
-        } --}}
-        return {
+        const response = {
             headers,
-            statusCode,
+            statusCode: statusCode || 200,
             body: JSON.stringify(data)
         }
+        return response;
     }
 
     // WARNING: This file was auto-generated with tsoa. Please do not modify it. Re-run tsoa to re-generate this file: https://github.com/lukeautry/tsoa
 
     function getValidatedArgs(args: any, event: APIGatewayProxyEventV2): any[] {
+
         const fieldErrors: FieldErrors  = {};
         const values = Object.keys(args).map((key) => {
             const name = args[key].name;
-            switch (args[key].in) {
+            const input = args[key].in
+            switch (input) {
                 case 'request':
                     return event;
                 case 'query':
@@ -185,7 +174,7 @@ export function RegisterRoutes(event: APIGatewayProxyEventV2) {
 
         if (Object.keys(fieldErrors).length > 0) {
             throw new ValidateError(fieldErrors, '');
-        }
+        }1
         return values;
     }
 
