@@ -61,44 +61,87 @@ const mockContext: Context = {
 };
 const basePath = '/v1';
 
+// TODO: Copy across tests from file://./express-server.spec.ts
 describe('API Gateway V2 Handler', () => {
-  it('can handle get request to root controller`s path', async () => {
-    return verifyGetRequest(
-      basePath,
-      mockEvent,
-      mockContext,
-      res => {
+  describe('GET specification', () => {
+    it('can handle get request to root controller`s path', async () => {
+      return verifyGetRequest(
+        basePath,
+        mockEvent,
+        mockContext,
+        res => {
+          const { body } = res;
+          const model = (body && JSON.parse(body)) as TestModel;
+          expect(model.id).to.equal(1);
+        },
+        200,
+      );
+    });
+
+    it('can handle get request to root controller`s method path', async () => {
+      return verifyGetRequest(basePath + '/rootControllerMethodWithPath', mockEvent, mockContext, res => {
         const { body } = res;
         const model = (body && JSON.parse(body)) as TestModel;
         expect(model.id).to.equal(1);
-      },
-      200,
-    );
-  });
-
-  it('can handle get request to root controller`s method path', async () => {
-    return verifyGetRequest(basePath + '/rootControllerMethodWithPath', mockEvent, mockContext, res => {
-      const { body } = res;
-      const model = (body && JSON.parse(body)) as TestModel;
-      expect(model.id).to.equal(1);
+      });
     });
-  });
 
-  it('can handle get request with path argument', async () => {
-    return verifyGetRequest(basePath + '/GetTest/Current', mockEvent, mockContext, res => {
-      const { body } = res;
-      const model = (body && JSON.parse(body)) as TestModel;
-      expect(model.id).to.equal(1);
+    it('can handle get request with path argument', async () => {
+      return verifyGetRequest(basePath + '/GetTest/Current', mockEvent, mockContext, res => {
+        const { body } = res;
+        const model = (body && JSON.parse(body)) as TestModel;
+        expect(model.id).to.equal(1);
+      });
     });
-  });
 
-  it('respects toJSON for class serialization', async () => {
-    return verifyGetRequest(basePath + '/GetTest/SimpleClassWithToJSON', mockEvent, mockContext, res => {
-      const { body } = res;
-      const getterClass = body && JSON.parse(body);
-      expect(getterClass).to.haveOwnProperty('a');
-      expect(getterClass.a).to.equal('hello, world');
-      expect(getterClass).to.not.haveOwnProperty('b');
+    it('respects toJSON for class serialization', async () => {
+      return verifyGetRequest(basePath + '/GetTest/SimpleClassWithToJSON', mockEvent, mockContext, res => {
+        const { body } = res;
+        const getterClass = body && JSON.parse(body);
+        expect(getterClass).to.haveOwnProperty('a');
+        expect(getterClass.a).to.equal('hello, world');
+        expect(getterClass).to.not.haveOwnProperty('b');
+      });
+    });
+
+    it('can handle get request with collection return value', () => {
+      return verifyGetRequest(basePath + '/GetTest/Multi', mockEvent, mockContext, res => {
+        const { body } = res;
+        const models = (body && JSON.parse(body)) as TestModel[];
+        expect(models.length).to.equal(3);
+        models.forEach(m => {
+          expect(m.id).to.equal(1);
+        });
+      });
+    });
+
+    // TODO: Lookup of functions needs to be handled
+    //
+    // Currently these paths are not parsed by API Gateway, but we should have a
+    // a factory that would be produce the event that ApiGateway would for the
+    // event
+    it('can handle get request with path and query parameters', () => {
+      return verifyGetRequest(basePath + `/GetTest/${1}/${true}/test?booleanParam=true&stringParam=test1234&numberParam=1234`, mockEvent, mockContext, res => {
+        const { body } = res;
+        const model = (body && JSON.parse(body)) as TestModel;
+        expect(model.id).to.equal(1);
+      });
+    });
+
+    it.skip('injects express request in parameters');
+
+    it('returns error if missing required query parameter', () => {
+      return verifyGetRequest(
+        basePath + `/GetTest/${1}/${true}/test?booleanParam=true&stringParam=test1234`,
+        mockEvent,
+        mockContext,
+        res => {
+          const { body } = res;
+          const parsedBody = body && JSON.parse(body);
+          expect(parsedBody.fields.numberParam.message).to.equal(`'numberParam' is required`);
+        },
+        400,
+      );
     });
   });
 });
@@ -106,5 +149,6 @@ describe('API Gateway V2 Handler', () => {
 async function verifyGetRequest(path: string, event: APIGatewayProxyEventV2, context: Context, verifyResponse: (res: any) => any, expectedStatus = 200) {
   const res = await handler[`GET ${path}`](event, context);
   expect(res.statusCode).to.equal(expectedStatus);
+
   return verifyResponse(res);
 }
