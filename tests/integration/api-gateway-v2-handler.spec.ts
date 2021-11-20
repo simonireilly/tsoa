@@ -3,48 +3,12 @@ import { expect } from 'chai';
 import { TestModel } from '../fixtures/testModel';
 import 'mocha';
 import { handler } from '../fixtures/api-gateway-v2/handler';
+import { apiGatewayProxyEventFactory } from 'factories/api-gateway-v2';
 
-const mockEvent = {
-  version: '2.0',
-  routeKey: 'GET /route/users/{userId}',
-  rawPath: '/route/users/1',
-  rawQueryString: 'this=that&component=anotherpart',
-  headers: {
-    accept: '*/*',
-    'accept-encoding': 'gzip, deflate, br',
-    authorization: '<API Key>',
-    'cache-control': 'no-cache',
-    'content-length': '0',
-    host: 'h6wd4009b5.execute-api.us-east-1.amazonaws.com',
-    'postman-token': '09c88604-b69c-496f-b762-8e8333576ac3',
-    'user-agent': 'PostmanRuntime/7.26.8',
-    'x-amzn-trace-id': 'Root=1-6195f906-4ad207e737bf5e315e73ce52',
-    'x-forwarded-for': '86.182.134.155',
-    'x-forwarded-port': '443',
-    'x-forwarded-proto': 'https',
-  },
-  queryStringParameters: { component: 'anotherpart', this: 'that' },
-  requestContext: {
-    accountId: '322567890963',
-    apiId: 'h6wd4009b5',
-    domainName: 'h6wd4009b5.execute-api.us-east-1.amazonaws.com',
-    domainPrefix: 'h6wd4009b5',
-    http: {
-      method: 'GET',
-      path: '/route/users/1',
-      protocol: 'HTTP/1.1',
-      sourceIp: '86.182.134.155',
-      userAgent: 'PostmanRuntime/7.26.8',
-    },
-    requestId: 'I_PZHiyjoAMEPjw=',
-    routeKey: 'GET /route/users/{userId}',
-    stage: '$default',
-    time: '18/Nov/2021:06:56:06 +0000',
-    timeEpoch: 1637218566914,
-  },
-  pathParameters: { userId: '1' },
-  isBase64Encoded: false,
-};
+// TODO: This one big test file will cause pain for future developers
+//
+// Propose doing GET/POST/PUT/PATCH/DELETE in separate files :+1:
+const mockEvent = apiGatewayProxyEventFactory.build();
 const mockContext: Context = {
   functionName: 'StubFunction',
   callbackWaitsForEmptyEventLoop: false,
@@ -115,13 +79,27 @@ describe('API Gateway V2 Handler', () => {
       });
     });
 
-    // TODO: Lookup of functions needs to be handled
+    // TODO: Improve factories
     //
-    // Currently these paths are not parsed by API Gateway, but we should have a
-    // a factory that would be produce the event that ApiGateway would for the
-    // event
+    // The API Gateway event destructuring isn't anything special, we should
+    // have a helper that does everything from the path.
     it('can handle get request with path and query parameters', () => {
-      return verifyGetRequest(basePath + `/GetTest/${1}/${true}/test?booleanParam=true&stringParam=test1234&numberParam=1234`, mockEvent, mockContext, res => {
+      const event = apiGatewayProxyEventFactory.build({
+        routeKey: 'GET /v1/GetTest/:numberPathParam/:booleanPathParam/:stringPathParam',
+        rawPath: `/v1/GetTest/${1}/${true}/test?booleanParam=true&stringParam=test1234&numberParam=1234`,
+        rawQueryString: 'booleanParam=true&stringParam=test1234&numberParam=1234',
+        queryStringParameters: {
+          booleanParam: 'true',
+          stringParam: 'test1234',
+          numberParam: '1234',
+        },
+        pathParameters: {
+          numberPathParam: '1',
+          stringPathParam: 'test',
+          booleanPathParam: 'true',
+        },
+      });
+      return verifyGetRequestV2(event, mockContext, res => {
         const { body } = res;
         const model = (body && JSON.parse(body)) as TestModel;
         expect(model.id).to.equal(1);
@@ -131,9 +109,22 @@ describe('API Gateway V2 Handler', () => {
     it.skip('injects express request in parameters');
 
     it('returns error if missing required query parameter', () => {
-      return verifyGetRequest(
-        basePath + `/GetTest/${1}/${true}/test?booleanParam=true&stringParam=test1234`,
-        mockEvent,
+      const event = apiGatewayProxyEventFactory.build({
+        routeKey: 'GET /v1/GetTest/:numberPathParam/:booleanPathParam/:stringPathParam',
+        rawPath: `/v1/GetTest/${1}/${true}/test?booleanParam=true&stringParam=test1234`,
+        rawQueryString: 'booleanParam=true&stringParam=test1234',
+        queryStringParameters: {
+          booleanParam: 'true',
+          stringParam: 'test1234',
+        },
+        pathParameters: {
+          numberPathParam: '1',
+          stringPathParam: 'test',
+          booleanPathParam: 'true',
+        },
+      });
+      return verifyGetRequestV2(
+        event,
         mockContext,
         res => {
           const { body } = res;
@@ -148,6 +139,15 @@ describe('API Gateway V2 Handler', () => {
 
 async function verifyGetRequest(path: string, event: APIGatewayProxyEventV2, context: Context, verifyResponse: (res: any) => any, expectedStatus = 200) {
   const res = await handler[`GET ${path}`](event, context);
+  expect(res.statusCode).to.equal(expectedStatus);
+
+  return verifyResponse(res);
+}
+
+async function verifyGetRequestV2(event: APIGatewayProxyEventV2, context: Context, verifyResponse: (res: any) => any, expectedStatus = 200) {
+  const res = await handler[event.routeKey](event, context, err => {
+    err;
+  });
   expect(res.statusCode).to.equal(expectedStatus);
 
   return verifyResponse(res);

@@ -48,6 +48,7 @@
     "chalk": "^2.4.2",
     "cross-env": "^5.1.6",
     "express": "^4.17.1",
+    "fishery": "^2.1.0",
     "inversify": "^5.0.1",
     "inversify-binding-decorators": "^4.0.0",
     "koa": "^2.8.1",
