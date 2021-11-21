@@ -117,6 +117,7 @@ export function RegisterRoutes() {
     function promiseHandler(controllerObj: any, promise: any, successStatus: any, callback: any) {
         return Promise.resolve(promise)
             .then((data: any) => {
+
                 let statusCode = successStatus;
                 let headers;
                 if (isController(controllerObj)) {
@@ -150,6 +151,11 @@ export function RegisterRoutes() {
         const values = Object.keys(args).map((key) => {
             const name = args[key].name;
             const input = args[key].in
+            {{!--
+                TODO: Parsing the JSON body should be a configuration
+                choice
+            --}}
+            const parsedBody = event.body && JSON.parse(event.body)
             switch (input) {
                 case 'request':
                     return event;
@@ -160,7 +166,7 @@ export function RegisterRoutes() {
                 case 'header':
                     return event.headers && validationService.ValidateParam(args[key], event.headers[name], name, fieldErrors, undefined, {{{json minimalSwaggerConfig}}});
                 case 'body':
-                    return validationService.ValidateParam(args[key], event.body, name, fieldErrors, undefined, {{{json minimalSwaggerConfig}}});
+                    return parsedBody && validationService.ValidateParam(args[key], parsedBody, name, fieldErrors, undefined, {{{json minimalSwaggerConfig}}});
                 {{!--
                 TODO: Understand the body prop
                 case 'body-prop':
